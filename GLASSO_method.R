@@ -3,6 +3,7 @@ library(space)
 library(glasso)
 library(dplyr)
 library(ggplot2)
+library(corpcor)
 
 # Import data
 df <- read.table('./Data/Stock_prices/log_returns_all_ts.csv',sep=",", header=TRUE)
@@ -28,26 +29,31 @@ plot(filtered_df$MS)
 filtered_df <- scale(filtered_df)
 
 
-
-
-
 ## Run the model
 
-# Neighbourhood selection
+# GLASSO method
 #################### estimate the partial correlation matrix with various methods
-alpha=1
-l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
-iter=3
 
-n=nrow(filtered_df)
-p=ncol(filtered_df)
+# Parameters
 
-result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
-print(result1)
+# Get the sample covariance matrix of the data
+s <- var(filtered_df)
+rho_param <- .01
 
-estimated_partial_corr_matrix = result1$ParCor
+# Run the algorithm
+result3 <-glasso(s, rho=rho_param)
+
+# Obtain the estimated covariance matrix
+estim_covmat = result3$w
+
+## Transform the covariance matrix into a partial correlation matrix
+estimated_partial_corr_matrix = cor2pcor(estim_covmat)
+
+print(estimated_partial_corr_matrix)
 
 # Hyperparameter tuning - penalty terms
 
 ## Export results
-write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/NE.csv')
+write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/GLASSO.csv')
+
+

@@ -28,26 +28,26 @@ plot(filtered_df$MS)
 filtered_df <- scale(filtered_df)
 
 
-
-
-
 ## Run the model
 
-# Neighbourhood selection
+# SPACE method
 #################### estimate the partial correlation matrix with various methods
+
+# Parameters
+n=nrow(filtered_df)
+p=ncol(filtered_df)
 alpha=1
 l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
 iter=3
 
-n=nrow(filtered_df)
-p=ncol(filtered_df)
+result2=space.joint(data.matrix(filtered_df), lam1=l1*n*1.56, lam2=0, iter=iter)
+print(result2)
 
-result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
-print(result1)
-
-estimated_partial_corr_matrix = result1$ParCor
+estimated_partial_corr_matrix = result2$ParCor
 
 # Hyperparameter tuning - penalty terms
 
 ## Export results
-write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/NE.csv')
+write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/SPACE.csv')
+
+

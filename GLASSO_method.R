@@ -87,7 +87,7 @@ filtered_factor_df = filtered_factor_df[var_cols]
 
   # Get the sample covariance matrix of the data
   s <- var(combined_filtered_df)
-rho_param <- 0.85
+rho_param <- 0.85 #0.01 #0.85
 
   # Run the algorithm
   result3 <-glasso(s, rho=rho_param)

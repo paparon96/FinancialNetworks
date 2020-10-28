@@ -9,6 +9,7 @@ vol$data$high_low <- cbind( as.data.frame( read.csv( "Data/Stock_prices/high_pri
                             as.data.frame( read.csv( "Data/Stock_prices/low_price.csv", header = TRUE, sep = "," ) )[ , -1 ] )
 colnames( vol$data$high_low )[ 1 ] <- "Date"
 vol$data$high_low$Date <- as.Date( format( as.Date( vol$data$high_low$Date, format = "%d/%m/%Y" ), "%Y-%m-%d"))
+risk_factors_5 <- as.data.frame( read.csv( "Data/Stock_prices/F-F_Research_Data_5_Factors_2x3_daily.CSV", header = TRUE, sep = "," ))
 
 # Calculating the annualized daily percent standard deviation
 vol$data$volatility <- as.data.frame( matrix( nrow = nrow( vol$data$high_low ), ncol = ncol( vol$data$high_low[ , -1 ] ) / 2 + 1 ) )
@@ -18,6 +19,7 @@ for( i in 1:10 ){
 }
 
 colnames( vol$data$volatility ) <- colnames( vol$data$high_low )[ 1:11 ]
+vol$data$volatility_risk_factors <- as.data.frame( cbind( vol$data$volatility[ 2500, ], risk_factors_5[ , -1 ] ))
 
 # Build VAR model
 vol$static <- list()
@@ -46,3 +48,17 @@ plot( vol$dynamic$rolling_spill$Date, vol$dynamic$rolling_spill$Total, type = "l
       xlab = "Time", ylab = "Total spillover index", 
       main = "Log volatility" )
 axis( side = 4 )
+
+# Add risk factors
+
+# Run regressions and save resids
+
+vol$factors <- list()
+vol$factors$resid <- lapply( vol$data$volatility[ , -1 ], function( y ) print( resid( lm( y ~ risk_factors_5$Mkt.RF + risk_factors_5$SMB +
+                                                                                                    risk_factors_5$HML + risk_factors_5$RMW + risk_factors_5$CMA +
+                                                                                                    risk_factors_5$RF ))))
+vol$factors$resid <- as.data.frame( lapply( vol$data$volatility[ , -1 ], function( y ) resid( lm( y ~ risk_factors_5$Mkt.RF + risk_factors_5$SMB +
+                                                                                     risk_factors_5$HML + risk_factors_5$RMW + risk_factors_5$CMA +
+                                                                                     risk_factors_5$RF ))))
+colnames( vol$factors$resid ) <- colnames( vol$data$volatility[ , -1 ] )
+vol$factors$resid$Date <- vol$data$volatility$Date

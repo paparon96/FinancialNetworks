@@ -5,7 +5,7 @@ LoadLibraries()
 threshold <- 0.0
 arrow_size <- 0.8
 edge_size <- 200
-window <- 100
+window <- 150
 
 
 # Last date of window
@@ -15,7 +15,13 @@ date <- as.Date( "2020-06-30" )
 # Function to plot graph (first run the function's code)
 graphs <- PlotNetworks( date, "Volatility", window, vol$data$volatility, arrow_size, edge_size, threshold )
 graphs$spill
+graphs <- PlotNetworks( date, "Volatility", window, vol$factors$resid, arrow_size, edge_size, threshold )
+graphs$spill
+
 graphs <- PlotNetworks( date, "Return", window, return$data$return[ , -1 ], arrow_size, edge_size, threshold )
+graphs$spill
+graphs <- PlotNetworks( date, "Return", window, return$factors$resid, arrow_size, edge_size, threshold )
+graphs$spill
 
 
 # Function

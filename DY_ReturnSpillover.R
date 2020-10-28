@@ -6,6 +6,8 @@ return <- list()
 # Loading data
 return$data <- list()
 return$data$return <- as.data.frame( read.csv( "Data/Stock_prices/log_returns_all_ts.csv", header = TRUE, sep = "," ) )
+return$data$return$Date <- format( as.Date( return$data$return$Date, format = "%d/%m/%Y" ), "%Y-%m-%d" )
+risk_factors_5 <- as.data.frame( read.csv( "Data/Stock_prices/F-F_Research_Data_5_Factors_2x3_daily.CSV", header = TRUE, sep = "," ))
 
 # Build VAR model
 return$static <- list()
@@ -39,3 +41,20 @@ plot( return$dynamic$rolling_spill$Date, return$dynamic$rolling_spill$Total, typ
       xlab = "Time", ylab = "Total spillover index", 
       main = "Log returnatility" )
 axis( side = 4 )
+
+
+# Add risk factors
+
+# Run regressions and save resids
+
+return$factors <- list()
+return$factors$resid <- lapply( return$data$return[ , -c( 1, 2 ) ], function( y ) print( summary( lm( y ~ risk_factors_5$Mkt.RF + risk_factors_5$SMB +
+                                                                                            risk_factors_5$HML + risk_factors_5$RMW + risk_factors_5$CMA +
+                                                                                            risk_factors_5$RF ))))
+
+return$factors$resid <- as.data.frame( lapply( return$data$return[ , -c( 1, 2 ) ], function( y ) resid( lm( y ~ risk_factors_5$Mkt.RF + risk_factors_5$SMB +
+                                                                                                    risk_factors_5$HML + risk_factors_5$RMW + risk_factors_5$CMA +
+                                                                                                    risk_factors_5$RF ))))
+
+colnames( return$factors$resid ) <- colnames( return$data$return[ , -c( 1, 2 ) ] )
+return$factors$resid$Date <- return$data$return$Date

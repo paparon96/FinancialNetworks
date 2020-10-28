@@ -4,6 +4,9 @@ library(glasso)
 library(dplyr)
 library(ggplot2)
 
+# Import custom functions
+source("common_functions.R")
+
 # Import data
 df <- read.table('./Data/Stock_prices/log_returns_all_ts.csv',sep=",", header=TRUE)
 

@@ -1,3 +1,6 @@
+# Set working directory
+setwd("/Egyetem/BGSE/Studies/Research/FinNetworks/FinancialNetworks")
+
 # Import packages
 library(circlize)
 

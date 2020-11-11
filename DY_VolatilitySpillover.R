@@ -62,3 +62,16 @@ vol$factors$resid <- as.data.frame( lapply( vol$data$volatility[ , -1 ], functio
                                                                                      risk_factors_5$RF ))))
 colnames( vol$factors$resid ) <- colnames( vol$data$volatility[ , -1 ] )
 vol$factors$resid$Date <- vol$data$volatility$Date
+
+
+
+
+big_var_est <- function(data) {
+  Model1 = constructModel( as.matrix(data), p = 2, struct = "Basic", gran = c(10, 1), VARX = list(), verbose = F)
+  Model1Results = cv.BigVAR(Model1)
+}
+
+# Perform the estimation
+oo <- big_var_est(vol$data$volatility[ 2226:2375, -1 ])
+
+spilloverDY12(oo, n.ahead = 10, no.corr = F)

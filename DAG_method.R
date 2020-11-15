@@ -50,8 +50,10 @@ dags = estimate.dag(dat)
 dags.fit <- estimate.parameters(dags, data = dat)
 
 # Get adjacency matrix of one particular solution from the solution path
-A <- as.matrix(get.adjacency.matrix(data_dag[[10]]))
+#A <- as.matrix(get.adjacency.matrix(data_dag[[10]]))
 
+A = dags.fit[[10]]$coefs
+A = as.data.frame(summary(A))
 
 ## Export results
 write.csv(A,'./Data/Estimated_networks/DAG_sparsebn.csv')

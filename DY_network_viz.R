@@ -9,7 +9,7 @@ window <- 150
 
 
 # Last date of window
-date <- as.Date( "2020-06-30" )
+date <- as.Date( "2020-03-05" )
 
 
 # Function to plot graph (first run the function's code)

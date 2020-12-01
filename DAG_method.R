@@ -14,7 +14,7 @@ method = "DAG"
 type = "volatility"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
-final_date = as.Date("2020-06-30")
+final_date = as.Date("2020-03-16")
 
 ###### Import data
 

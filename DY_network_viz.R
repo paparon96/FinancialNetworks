@@ -9,19 +9,20 @@ window <- 150
 
 
 # Last date of window
-date <- as.Date( "2020-03-05" )
+date <- as.Date( "2020-03-16" )
 
 
 # Function to plot graph (first run the function's code)
 graphs <- PlotNetworks( date, "Volatility", window, vol$data$volatility, arrow_size, edge_size, threshold )
-graphs$spill
+name <- 'DY_volatility_' + date + '.csv'
+write.csv( graphs$spill[ 1 ], 'DY_volatility_2020_03_16.csv' )
 graphs <- PlotNetworks( date, "Volatility", window, vol$factors$resid, arrow_size, edge_size, threshold )
-graphs$spill
+write.csv( graphs$spill[ 1 ], 'DY_volatility_factor_resid_2020_03_16.csv' )
 
 graphs <- PlotNetworks( date, "Return", window, return$data$return[ , -1 ], arrow_size, edge_size, threshold )
-graphs$spill
+write.csv( graphs$spill[ 1 ], 'DY_return_2020_03_16.csv' )
 graphs <- PlotNetworks( date, "Return", window, return$factors$resid, arrow_size, edge_size, threshold )
-graphs$spill
+write.csv( graphs$spill[ 1 ], 'DY_return_factor_resid_2020_03_16.csv' )
 
 
 # Function

@@ -10,6 +10,13 @@ import pandas as pd
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime
 import copy
+from datetime import date
+
+# Get current data and transform it into another format
+today = date.today()
+current_date = today.strftime("%d_%m_%Y")
+print("Current date reformatted:")
+print(current_date)
 
 
 # Important trick to access all elements of the list: https://stackoverflow.com/questions/48162795/iterating-through-elements-get-repeating-result-on-selenium-on-python
@@ -17,7 +24,7 @@ import copy
 # Parameters
 chrome_options = Options()
 chrome_options.add_argument("--headless")
-driver = webdriver.Chrome()  # options=chrome_options # or empty if we want to see it in action
+#driver = webdriver.Chrome()  # options=chrome_options # or empty if we want to see it in action
 
 # Initialize list of tuples to hold general infos
 general_info_list = []
@@ -36,16 +43,16 @@ for firm in firms:
     driver.get('https://www.nasdaq.com/market-activity/stocks/{}/institutional-holdings'.format(firm))
 
     # Get info about the land
-    time.sleep(4)
+    time.sleep(10)
 
     # Sort investors by size
     for j in range(0,2):
         sorting_buttons = driver.find_elements_by_xpath(".//span[@class='institutional-holdings__columnheader-sort']")
         sorting_button = sorting_buttons[2]
         driver.execute_script("arguments[0].click();", sorting_button)
-        time.sleep(4)
+        time.sleep(10)
 
-    time.sleep(4)
+    time.sleep(10)
 
     table_info_list = driver.find_elements_by_xpath("//table[@role='table']")
     tbl_general_info = table_info_list[0].get_attribute('outerHTML')
@@ -66,7 +73,7 @@ for firm in firms:
     general_info_list.append((float(inst_share[0:6])/100,int(shares_outstanding)*1000000,
                                 float(value_holdings)*1000,firm))
 
-    time.sleep(3)
+    time.sleep(10)
 
     # Loop over the different pages (60 largest institutional investors)
     for i in range(0,4):
@@ -90,7 +97,7 @@ for firm in firms:
             final_df = copy.deepcopy(df)
             #print(final_df.head())
 
-            time.sleep(2)
+            time.sleep(10)
 
         else:
 
@@ -100,10 +107,10 @@ for firm in firms:
         # Go to the next page
         next_page_button = driver.find_element_by_xpath(".//button[@class='pagination__next']")
         driver.execute_script("arguments[0].click();", next_page_button)
-        time.sleep(2)
+        time.sleep(10)
             #next_page_button.click()
 
-        time.sleep(2)
+        #time.sleep(2)
 
 
     # Close the webdriver
@@ -118,7 +125,7 @@ print(final_df.head())
 
 # Export data
 # Save out results to csv file
-final_df.to_excel('./Data/NASDAQ_INST_holdings.xlsx', index=True)
+final_df.to_excel('./Data/NASDAQ_INST_holdings_{}.xlsx'.format(current_date), index=True)
 
 # Convert list of tuples to Pandas df and export to Excel
 general_info_df = pd.DataFrame(general_info_list, columns =['Institutional_ownership_share', 'Shares_outstanding',
@@ -126,4 +133,4 @@ general_info_df = pd.DataFrame(general_info_list, columns =['Institutional_owner
 print(general_info_df.head())
 
 # Save out results to csv file
-general_info_df.to_excel('./Data/NASDAQ_stock_metadata.xlsx', index=True)
+general_info_df.to_excel('./Data/NASDAQ_stock_metadata_{}.xlsx'.format(current_date), index=True)

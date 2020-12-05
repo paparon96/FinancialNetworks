@@ -49,3 +49,44 @@ get_residuals <- function(filtered_df,filtered_factor_df){
   }
   return(resids)
 }
+
+
+dag_matrix <- function(A,n,d){
+  
+  b = as(A, "dgCMatrix")
+  temp = cbind.data.frame(r = b@i + 1, c = b@p + 1, x = b@x)
+  print(temp)
+  
+  mat <- matrix(0, nrow = n, ncol = d)
+  
+  counter = 0
+  col = 1
+  
+  for (i in 1:dim(temp)[1]){
+    
+      print(i)
+    counter = counter + 1
+    
+      print(temp$r[i])
+      print(col)
+      mat[temp$r[i],col] = temp$x[i]
+      
+      max = 0
+      for (j in  1:length(temp$c)){
+        
+        if (counter >= temp$c[j]){
+          
+          max = j
+          
+          
+        }
+      }
+    col = max
+    
+    
+  }
+  
+  return(mat)
+}
+
+

@@ -58,3 +58,33 @@ return$factors$resid <- as.data.frame( lapply( return$data$return[ , -c( 1, 2 ) 
 
 colnames( return$factors$resid ) <- colnames( return$data$return[ , -c( 1, 2 ) ] )
 return$factors$resid$Date <- return$data$return$Date
+  
+
+# Summary of statistics
+
+
+statistics_march <- as.data.frame( matrix( rep( 0, 30 ), nrow = 10 ) )
+rownames( statistics_march ) <- colnames( vol$data$volatility )[ -1 ]
+colnames( statistics_march ) <- c( 'Mean', 'Median', 'Std' )
+statistics_march[ , 1 ] <- sapply( return$data$return[ 2234:2383, -c( 1, 2 ) ], mean )
+statistics_march[ , 2 ] <- sapply( return$data$return[ 2234:2383, -c( 1, 2 ) ], median )
+statistics_march[ , 3 ] <- sapply( return$data$return[ 2234:2383, -c( 1, 2 ) ], sd )
+
+statistics_june <- as.data.frame( matrix( rep( 0, 30 ), nrow = 10 ) )
+rownames( statistics_june ) <- colnames( vol$data$volatility )[ -1 ]
+colnames( statistics_june ) <- c( 'Mean', 'Median', 'Std' )
+statistics_june[ , 1 ] <- sapply( return$data$return[ 2308:2457, -c( 1, 2 ) ], mean )
+statistics_june[ , 2 ] <- sapply( return$data$return[ 2308:2457, -c( 1, 2 ) ], median )
+statistics_june[ , 3 ] <- sapply( return$data$return[ 2308:2457, -c( 1, 2 ) ], sd )
+
+
+# BigVAR
+
+# Perform the estimation
+mod1<-constructModel( as.matrix( return$data$return[ 2184:2383, -c( 1, 2 ) ] ), p = 2, "Basic", gran = c( 150, 10 ), RVAR = FALSE, h = 10, cv = "Rolling", MN = FALSE, verbose = FALSE, IC = TRUE )
+results <- cv.BigVAR( mod1 )
+results
+plot( results )
+spilloverDY12( results, n.ahead = 10, no.corr = T)
+
+

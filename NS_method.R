@@ -3,6 +3,10 @@ library(space)
 library(glasso)
 library(dplyr)
 library(ggplot2)
+library(pulsar)
+library(huge)
+library(devtools)
+library(SpiecEasi)
 
 # Import custom functions
 source("common_functions.R")
@@ -12,7 +16,8 @@ method = "NS"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
-final_date = as.Date("2020-03-16")
+validation_window_length = 40
+final_date = as.Date("2020-06-30")
 
 ###### Import data
 
@@ -60,14 +65,21 @@ filtered_df = subset(df, final_date >= as.Date(Date))
 start_date = tail(filtered_df$Date,n=window_length)[1]
 filtered_df = subset(filtered_df,as.Date(Date) >= start_date)
 
+# Get validation dataset
+validation_df = subset(df,as.Date(Date) > final_date)
+validation_final_date = head(validation_df$Date,n=validation_window_length)[validation_window_length]
+validation_df = subset(validation_df,validation_final_date >= as.Date(Date))
+
 # Inspect the results
 plot(filtered_df$MS)
 
 # Get only the relevant columns
 filtered_df = filtered_df[var_cols]
+validation_df = validation_df[var_cols]
 
 # Standardize final dataset
 filtered_df <- scale(filtered_df)
+validation_df <- scale(validation_df)
 
 
 
@@ -83,7 +95,7 @@ filtered_df <- scale(filtered_df)
 n=nrow(filtered_df)
 p=ncol(filtered_df)
 alpha=1
-l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
+l1=0.01*(sqrt(n)*qnorm(1-alpha/(2*p^2))) #*0.7
 iter=3
 
 
@@ -92,8 +104,34 @@ result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
 print(result1)
 
 estimated_partial_corr_matrix = result1$ParCor
+print(estimated_partial_corr_matrix)
+
+custom_mb = function(data,reg_param){
+  result1=space.neighbor(data, lam1=reg_param, lam2=0)
+  
+}
 
 # Hyperparameter tuning - penalty terms
+lmax = (sqrt(n)*qnorm(1-alpha/(2*p^2)))
+
+out.mb = huge(data.matrix(filtered_df))
+
+# model selection using stars
+out.select = huge.select(out.mb , criterion = "ric",
+                          rep.num=10)
+
+
+#plot(out.select)
+#out.select$refit
+chosen_lambda = out.select$opt.lambda
+
+# Rerun model with chosen lambda
+result1=space.neighbor(data.matrix(filtered_df), lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result1$ParCor
+print(estimated_partial_corr_matrix)
+
+
 
 ## Export results
 # Name the file properly first

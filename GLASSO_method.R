@@ -4,6 +4,8 @@ library(glasso)
 library(dplyr)
 library(ggplot2)
 library(corpcor)
+library(huge)
+library(pulsar)
 
 # Import custom functions
 source("common_functions.R")
@@ -97,9 +99,49 @@ estimated_partial_corr_matrix = invcov2pcorr(estim_covmat)
 print(estimated_partial_corr_matrix)
 
 # Hyperparameter tuning - penalty terms
+out.glasso = huge(data.matrix(filtered_df), method = "glasso")
+
+# model selection using ric or stars
+out.select = huge.select(out.glasso , criterion = "ric",
+                         rep.num=10)
+
+# Get optimal regularisation parameter
+chosen_rho = out.select$opt.lambda
+
+# Rerun model with chosen lambda
+selected_glasso_entries = huge(data.matrix(filtered_df),
+                  method = "glasso",
+                  lambda = chosen_rho)
+
+selected_glasso_entries = selected_glasso_entries$path[[1]]
+
+result1 <-glasso(s, rho=chosen_rho)
+
+# Obtain the estimated inverse covariance matrix
+estim_inverse_partial_covmat = result1$wi
+
+# Get the partial correlation network from the inverse covariance matrix
+estimated_partial_corr_matrix = invcov2pcorr(estim_inverse_partial_covmat)
+
+# Initialize empty matrix and fill up with selected elements
+n = dim(estimated_partial_corr_matrix)[1]
+d = dim(estimated_partial_corr_matrix)[2]
+m = matrix(0, nrow = n,
+           ncol = d) 
+for (i in 1:n){
+  for (j in 1:d){
+    
+    if (i != j & selected_glasso_entries[i,j] != 0 )
+    
+      m[i,j] = estimated_partial_corr_matrix[i,j]
+  }
+}
+
+# Set diagonal entries
+diag(m) = 1
+estimated_partial_corr_matrix = m
 
 ## Export results
-#write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/GLASSO.csv')
 # Name the file properly first
 final_date_transformed = paste0(substr(final_date,1,4),"_",
                                 substr(final_date,6,7),"_",
@@ -153,6 +195,47 @@ rho_param <- rho_hyperparam #0.01 #0.85
   print(estimated_partial_corr_matrix)
 
   # Hyperparameter tuning - penalty terms
+  out.glasso = huge(data.matrix(combined_filtered_df), method = "glasso")
+  
+  # model selection using ric or stars
+  out.select = huge.select(out.glasso , criterion = "ric",
+                           rep.num=10)
+  
+  # Get optimal regularisation parameter
+  chosen_rho = out.select$opt.lambda
+  
+  # Rerun model with chosen lambda
+  selected_glasso_entries = huge(data.matrix(combined_filtered_df),
+                                 method = "glasso",
+                                 lambda = chosen_rho)
+  
+  selected_glasso_entries = selected_glasso_entries$path[[1]]
+  
+  result1 <-glasso(s, rho=chosen_rho)
+  
+  # Obtain the estimated inverse covariance matrix
+  estim_inverse_partial_covmat = result1$wi
+  
+  # Get the partial correlation network from the inverse covariance matrix
+  estimated_partial_corr_matrix = invcov2pcorr(estim_inverse_partial_covmat)
+  
+  # Initialize empty matrix and fill up with selected elements
+  n = dim(estimated_partial_corr_matrix)[1]
+  d = dim(estimated_partial_corr_matrix)[2]
+  m = matrix(0, nrow = n,
+             ncol = d) 
+  for (i in 1:n){
+    for (j in 1:d){
+      
+      if (i != j & selected_glasso_entries[i,j] != 0 )
+        
+        m[i,j] = estimated_partial_corr_matrix[i,j]
+    }
+  }
+  
+  # Set diagonal entries
+  diag(m) = 1
+  estimated_partial_corr_matrix = m
   
   ## Export results
   filename = paste0("./Data/Estimated_networks/",method,"_",type,"_combined_factors_",final_date_transformed,".csv")
@@ -182,6 +265,49 @@ rho_param <- rho_hyperparam
 
 
   # Hyperparameter tuning - penalty terms
+  out.glasso = huge(data.matrix(factor_residual_matrix), method = "glasso")
+  
+  # model selection using ric or stars
+  out.select = huge.select(out.glasso , criterion = "ric",
+                           rep.num=10)
+  
+  # Get optimal regularisation parameter
+  chosen_rho = out.select$opt.lambda
+  
+  # Rerun model with chosen lambda
+  selected_glasso_entries = huge(data.matrix(factor_residual_matrix),
+                                 method = "glasso",
+                                 lambda = chosen_rho)
+  
+  selected_glasso_entries = selected_glasso_entries$path[[1]]
+  
+  result1 <-glasso(s, rho=chosen_rho)
+  
+  # Obtain the estimated inverse covariance matrix
+  estim_inverse_partial_covmat = result1$wi
+  
+  # Get the partial correlation network from the inverse covariance matrix
+  estimated_partial_corr_matrix = invcov2pcorr(estim_inverse_partial_covmat)
+  
+  # Initialize empty matrix and fill up with selected elements
+  n = dim(estimated_partial_corr_matrix)[1]
+  d = dim(estimated_partial_corr_matrix)[2]
+  m = matrix(0, nrow = n,
+             ncol = d) 
+  for (i in 1:n){
+    for (j in 1:d){
+      
+      if (i != j & selected_glasso_entries[i,j] != 0 )
+        
+        m[i,j] = estimated_partial_corr_matrix[i,j]
+    }
+  }
+  
+  # Set diagonal entries
+  diag(m) = 1
+  estimated_partial_corr_matrix = m
+  
+  # Export results
   filename = paste0("./Data/Estimated_networks/",method,"_",type,"_factor_resid_",final_date_transformed,".csv")
   write.csv(estimated_partial_corr_matrix,filename)
 

@@ -5,8 +5,8 @@ library(dplyr)
 library(ggplot2)
 library(pulsar)
 library(huge)
-library(devtools)
-library(SpiecEasi)
+#library(devtools)
+#library(SpiecEasi)
 
 # Import custom functions
 source("common_functions.R")
@@ -112,21 +112,19 @@ custom_mb = function(data,reg_param){
 }
 
 # Hyperparameter tuning - penalty terms
-lmax = (sqrt(n)*qnorm(1-alpha/(2*p^2)))
 
 out.mb = huge(data.matrix(filtered_df))
 
-# model selection using stars
+# model selection using ric or stars
 out.select = huge.select(out.mb , criterion = "ric",
                           rep.num=10)
 
-
-#plot(out.select)
-#out.select$refit
+# Get optimal regularisation parameter
 chosen_lambda = out.select$opt.lambda
 
 # Rerun model with chosen lambda
-result1=space.neighbor(data.matrix(filtered_df), lam1=chosen_lambda, lam2=0)
+result1=space.neighbor(data.matrix(filtered_df),
+                       lam1=chosen_lambda, lam2=0)
 
 estimated_partial_corr_matrix = result1$ParCor
 print(estimated_partial_corr_matrix)
@@ -175,24 +173,38 @@ combined_filtered_df <- cbind(filtered_df,filtered_factor_df)
 # Neighbourhood selection
 #################### estimate the partial correlation matrix with various methods
 
-n=nrow(combined_filtered_df)
-p=ncol(combined_filtered_df)
+#n=nrow(combined_filtered_df)
+#p=ncol(combined_filtered_df)
 
-alpha=1
-l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
-iter=3
+#alpha=1
+#l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
+#iter=3
 
 
 
-result1=space.neighbor(data.matrix(combined_filtered_df), lam1=l1, lam2=0)
-print(result1)
+#result1=space.neighbor(data.matrix(combined_filtered_df), lam1=l1, lam2=0)
+#print(result1)
 
-estimated_partial_corr_matrix = result1$ParCor
+#estimated_partial_corr_matrix = result1$ParCor
 
 # Hyperparameter tuning - penalty terms
+out.mb = huge(data.matrix(combined_filtered_df))
+
+# model selection using ric or stars
+out.select = huge.select(out.mb , criterion = "ric",
+                         rep.num=10)
+
+# Get optimal regularisation parameter
+chosen_lambda = out.select$opt.lambda
+
+# Rerun model with chosen lambda
+result1=space.neighbor(data.matrix(filtered_df),
+                       lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result1$ParCor
+print(estimated_partial_corr_matrix)
 
 ## Export results
-#write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/NE_combined_factors.csv')
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_combined_factors_",final_date_transformed,".csv")
 write.csv(estimated_partial_corr_matrix,filename)
 
@@ -224,10 +236,23 @@ print(result1)
 estimated_partial_corr_matrix = result1$ParCor
 
 # Hyperparameter tuning - penalty terms
+out.mb = huge(data.matrix(factor_residual_matrix))
+
+# model selection using ric or stars
+out.select = huge.select(out.mb , criterion = "ric",
+                         rep.num=10)
+
+# Get optimal regularisation parameter
+chosen_lambda = out.select$opt.lambda
+
+# Rerun model with chosen lambda
+result1=space.neighbor(data.matrix(filtered_df),
+                       lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result1$ParCor
+print(estimated_partial_corr_matrix)
 
 ## Export results
-#write.csv(estimated_partial_corr_matrix,'./Data/Estimated_networks/NE_factor_residuals.csv')
-
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_factor_resid_",final_date_transformed,".csv")
 write.csv(estimated_partial_corr_matrix,filename)
 

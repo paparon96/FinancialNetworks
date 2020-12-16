@@ -3,6 +3,8 @@ library(space)
 library(glasso)
 library(dplyr)
 library(ggplot2)
+library(pulsar)
+library(huge)
 
 # Import custom functions
 source("common_functions.R")
@@ -90,6 +92,32 @@ print(result2)
 estimated_partial_corr_matrix = result2$ParCor
 
 # Hyperparameter tuning - penalty terms
+custom_space = function(data,lambda){
+  path <-  lapply(seq(length(lambda)), function(i) {
+    tmp <- space.joint(data, lam1=i, lam2=0)
+    tmp <- tmp$ParCor
+  })
+  my_list = list("path" = path)
+  return(my_list)
+}
+
+lmax=(sqrt(n)*qnorm(1-alpha/(2*p^2)))
+lams <- getLamPath(lmax, lmax*.05, len=40)
+
+spaceargs <- list(lambda=lams)
+out.space <- pulsar(data.matrix(filtered_df),
+                fun=custom_space, fargs=spaceargs, rep.num=30,
+                criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = lams[out.space$stars$opt.index]
+
+# Refit with optimal lambda
+result2=space.joint(data.matrix(filtered_df),
+                    lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result2$ParCor
+print(estimated_partial_corr_matrix)
 
 ## Export results
 # Name the file properly first

@@ -5,13 +5,15 @@ library(dplyr)
 library(ggplot2)
 library(corpcor)
 library(sparsebn)
+library(pulsar)
+library(huge)
 
 # Import custom functions
 source("common_functions.R")
 
 ## Global parameters
 method = "DAG"
-type = "volatility"
+type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
 final_date = as.Date("2020-03-16")
@@ -93,6 +95,43 @@ A = dags.fit[[10]]$coefs
 # Convert sparse matrix into regular matrix format
 estimated_network = as.matrix(A)
 
+
+## Hyperparameter-tuning - penalty term
+custom_dag = function(data,lambda){
+  path <-  lapply(seq(length(lambda)), function(i) {
+    
+    print(i)
+    
+    dat <- sparsebnData(data, type = "c")
+    
+    # Run the algorithm
+    dags = estimate.dag(dat)
+    dags.fit <- estimate.parameters(dags, data = dat)
+    
+    tmp <- as.matrix(dags.fit[[i]]$coefs)
+  })
+  my_list = list("path" = path)
+  return(my_list)
+}
+
+dagargs = seq(from=length(dags.fit),to=1,by=-1)
+dagargs <- list(lambda=dagargs)
+
+out.dag <- pulsar(filtered_df,
+                    fun=custom_dag, fargs=dagargs, rep.num=10,
+                    criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = out.dag$stars$opt.index
+
+# Refit with optimal lambda
+A = dags.fit[[chosen_lambda]]$coefs
+
+# Convert sparse matrix into regular matrix format
+estimated_network = as.matrix(A)
+
+print(estimated_network)
+
 ## Export results
 # Name the file properly first
 final_date_transformed = paste0(substr(final_date,1,4),"_",
@@ -100,7 +139,6 @@ final_date_transformed = paste0(substr(final_date,1,4),"_",
                                 substr(final_date,9,10))
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_",final_date_transformed,".csv")
 write.csv(estimated_network,filename)
-#write.csv(A,'./Data/Estimated_networks/DAG_sparsebn.csv')
 
 
 ## METHOD PART 2: Run combined model
@@ -144,9 +182,31 @@ A = dags.fit[[10]]$coefs
 # Convert sparse matrix into regular matrix format
 estimated_network = as.matrix(A)
 
+## Hyperparameter-tuning - penalty term
+dagargs = seq(from=length(dags.fit),to=1,by=-1)
+dagargs <- list(lambda=dagargs)
+
+out.dag <- pulsar(combined_filtered_df,
+                  fun=custom_dag, fargs=dagargs, rep.num=10,
+                  criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = out.dag$stars$opt.index
+
+# Refit with optimal lambda
+A = dags.fit[[chosen_lambda]]$coefs
+
+# Convert sparse matrix into regular matrix format
+estimated_network = as.matrix(A)
+
+print(estimated_network)
+
+
 ## Export results
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_combined_factors_",final_date_transformed,".csv")
 write.csv(estimated_network,filename)
+
+
 
 ## METHOD PART 3: Model with residuals from factor regression
 
@@ -168,6 +228,27 @@ A = dags.fit[[10]]$coefs
 
 # Convert sparse matrix into regular matrix format
 estimated_network = as.matrix(A)
+
+
+## Hyperparameter-tuning - penalty term
+dagargs = seq(from=length(dags.fit),to=1,by=-1)
+dagargs <- list(lambda=dagargs)
+
+out.dag <- pulsar(factor_residual_matrix,
+                  fun=custom_dag, fargs=dagargs, rep.num=10,
+                  criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = out.dag$stars$opt.index
+
+# Refit with optimal lambda
+A = dags.fit[[chosen_lambda]]$coefs
+
+# Convert sparse matrix into regular matrix format
+estimated_network = as.matrix(A)
+
+print(estimated_network)
+
 
 ## Export results
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_factor_resid_",final_date_transformed,".csv")

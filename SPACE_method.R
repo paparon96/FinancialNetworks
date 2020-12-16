@@ -11,10 +11,10 @@ source("common_functions.R")
 
 ## Global parameters
 method = "SPACE"
-type = "return"
+type = "volatility"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
-final_date = as.Date("2020-03-16")
+final_date = as.Date("2020-06-30")
 
 ###### Import data
 
@@ -170,6 +170,25 @@ print(result2)
 
 estimated_partial_corr_matrix = result2$ParCor
 
+## Hyperparameter tuning - penalty term
+lmax=(sqrt(n)*qnorm(1-alpha/(2*p^2)))
+lams <- getLamPath(lmax, lmax*.05, len=40)
+
+spaceargs <- list(lambda=lams)
+out.space <- pulsar(data.matrix(combined_filtered_df),
+                    fun=custom_space, fargs=spaceargs, rep.num=30,
+                    criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = lams[out.space$stars$opt.index]
+
+# Refit with optimal lambda
+result2=space.joint(data.matrix(combined_filtered_df),
+                    lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result2$ParCor
+print(estimated_partial_corr_matrix)
+
 ## Export results
 filename = paste0("./Data/Estimated_networks/",method,"_",type,"_combined_factors_",final_date_transformed,".csv")
 write.csv(estimated_partial_corr_matrix,filename)
@@ -194,6 +213,25 @@ result2=space.joint(data.matrix(factor_residual_matrix), lam1=l1*n*1.56, lam2=0,
 print(result2)
 
 estimated_partial_corr_matrix = result2$ParCor
+
+## Hyperparameter tuning - penalty term
+lmax=(sqrt(n)*qnorm(1-alpha/(2*p^2)))
+lams <- getLamPath(lmax, lmax*.05, len=40)
+
+spaceargs <- list(lambda=lams)
+out.space <- pulsar(data.matrix(factor_residual_matrix),
+                    fun=custom_space, fargs=spaceargs, rep.num=30,
+                    criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
+
+# Get optimal lambda
+chosen_lambda = lams[out.space$stars$opt.index]
+
+# Refit with optimal lambda
+result2=space.joint(data.matrix(factor_residual_matrix),
+                    lam1=chosen_lambda, lam2=0)
+
+estimated_partial_corr_matrix = result2$ParCor
+print(estimated_partial_corr_matrix)
 
 
 ## Export results

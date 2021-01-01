@@ -12,7 +12,7 @@ library(huge)
 source("common_functions.R")
 
 ## Global parameters
-method = "NS"
+method = "SPACE"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
@@ -26,7 +26,7 @@ df <- read.table('./Data/Large_network/largenet_log_ret.csv',sep=",", header=TRU
 
 # Format date column
 df$Date <- as.Date(df$Date)
-print(df$Date)
+
 
 # Filter dataset based on the dates
 filtered_df = subset(df, final_date >= as.Date(Date))
@@ -61,48 +61,48 @@ validation_df <- scale(validation_df)
 
 ## Run the model
 
-# Neighbourhood selection
+# SPACE method
 #################### estimate the partial correlation matrix with various methods
 
 # Parameters
 n=nrow(filtered_df)
 p=ncol(filtered_df)
 alpha=1
-l1=0.01*(sqrt(n)*qnorm(1-alpha/(2*p^2))) #*0.7
+l1=(1/sqrt(n)*qnorm(1-alpha/(2*p^2)))*0.7
 iter=3
 
+result2=space.joint(data.matrix(filtered_df), lam1=l1*n*1.56, lam2=0, iter=iter)
+print(result2)
 
-
-result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
-print(result1)
-
-estimated_partial_corr_matrix = result1$ParCor
-print(estimated_partial_corr_matrix)
-
-custom_mb = function(data,reg_param){
-  result1=space.neighbor(data, lam1=reg_param, lam2=0)
-  
-}
+estimated_partial_corr_matrix = result2$ParCor
 
 # Hyperparameter tuning - penalty terms
+custom_space = function(data,lambda){
+  path <-  lapply(seq(length(lambda)), function(i) {
+    tmp <- space.joint(data, lam1=i, lam2=0)
+    tmp <- tmp$ParCor
+  })
+  my_list = list("path" = path)
+  return(my_list)
+}
 
-out.mb = huge(data.matrix(filtered_df))
+lmax=(sqrt(n)*qnorm(1-alpha/(2*p^2)))
+lams <- getLamPath(lmax, lmax*.05, len=20)
 
-# model selection using ric or stars
-out.select = huge.select(out.mb , criterion = "ric",
-                          rep.num=10)
+spaceargs <- list(lambda=lams)
+out.space <- pulsar(data.matrix(filtered_df),
+                    fun=custom_space, fargs=spaceargs, rep.num=10,
+                    criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
 
-# Get optimal regularisation parameter
-chosen_lambda = out.select$opt.lambda
+# Get optimal lambda
+chosen_lambda = lams[out.space$stars$opt.index]
 
-# Rerun model with chosen lambda
-result1=space.neighbor(data.matrix(filtered_df),
-                       lam1=chosen_lambda, lam2=0)
+# Refit with optimal lambda
+result2=space.joint(data.matrix(filtered_df),
+                    lam1=chosen_lambda, lam2=0)
 
-estimated_partial_corr_matrix = result1$ParCor
+estimated_partial_corr_matrix = result2$ParCor
 print(estimated_partial_corr_matrix)
-
-
 
 ## Export results
 # Name the file properly first

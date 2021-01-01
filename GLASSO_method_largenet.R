@@ -12,12 +12,13 @@ library(huge)
 source("common_functions.R")
 
 ## Global parameters
-method = "NS"
+method = "GLASSO"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
 validation_window_length = 40
 final_date = as.Date("2020-06-30")
+rho_hyperparam = 0.25
 
 ###### Import data
 
@@ -26,7 +27,7 @@ df <- read.table('./Data/Large_network/largenet_log_ret.csv',sep=",", header=TRU
 
 # Format date column
 df$Date <- as.Date(df$Date)
-print(df$Date)
+
 
 # Filter dataset based on the dates
 filtered_df = subset(df, final_date >= as.Date(Date))
@@ -55,52 +56,72 @@ filtered_df <- scale(filtered_df)
 validation_df <- scale(validation_df)
 
 
-
-
 ## METHOD 1: Base case (without factors)
 
 ## Run the model
 
-# Neighbourhood selection
+# GLASSO method
 #################### estimate the partial correlation matrix with various methods
 
 # Parameters
-n=nrow(filtered_df)
-p=ncol(filtered_df)
-alpha=1
-l1=0.01*(sqrt(n)*qnorm(1-alpha/(2*p^2))) #*0.7
-iter=3
 
+# Get the sample covariance matrix of the data
+s <- var(filtered_df)
+rho_param <- rho_hyperparam
 
+# Run the algorithm
+result3 <-glasso(s, rho=rho_param)
 
-result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
-print(result1)
+# Obtain the estimated covariance matrix
+estim_covmat = result3$wi
 
-estimated_partial_corr_matrix = result1$ParCor
+## Transform the covariance matrix into a partial correlation matrix
+estimated_partial_corr_matrix = invcov2pcorr(estim_covmat)
+
 print(estimated_partial_corr_matrix)
-
-custom_mb = function(data,reg_param){
-  result1=space.neighbor(data, lam1=reg_param, lam2=0)
-  
-}
 
 # Hyperparameter tuning - penalty terms
-
-out.mb = huge(data.matrix(filtered_df))
+out.glasso = huge(data.matrix(filtered_df), method = "glasso")
 
 # model selection using ric or stars
-out.select = huge.select(out.mb , criterion = "ric",
-                          rep.num=10)
+out.select = huge.select(out.glasso , criterion = "ric",
+                         rep.num=10)
 
 # Get optimal regularisation parameter
-chosen_lambda = out.select$opt.lambda
+chosen_rho = out.select$opt.lambda
 
 # Rerun model with chosen lambda
-result1=space.neighbor(data.matrix(filtered_df),
-                       lam1=chosen_lambda, lam2=0)
+selected_glasso_entries = huge(data.matrix(filtered_df),
+                               method = "glasso",
+                               lambda = chosen_rho)
 
-estimated_partial_corr_matrix = result1$ParCor
-print(estimated_partial_corr_matrix)
+selected_glasso_entries = selected_glasso_entries$path[[1]]
+
+result1 <-glasso(s, rho=chosen_rho)
+
+# Obtain the estimated inverse covariance matrix
+estim_inverse_partial_covmat = result1$wi
+
+# Get the partial correlation network from the inverse covariance matrix
+estimated_partial_corr_matrix = invcov2pcorr(estim_inverse_partial_covmat)
+
+# Initialize empty matrix and fill up with selected elements
+n = dim(estimated_partial_corr_matrix)[1]
+d = dim(estimated_partial_corr_matrix)[2]
+m = matrix(0, nrow = n,
+           ncol = d) 
+for (i in 1:n){
+  for (j in 1:d){
+    
+    if (i != j & selected_glasso_entries[i,j] != 0 )
+      
+      m[i,j] = estimated_partial_corr_matrix[i,j]
+  }
+}
+
+# Set diagonal entries
+diag(m) = 1
+estimated_partial_corr_matrix = m
 
 
 

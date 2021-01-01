@@ -5,6 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(pulsar)
 library(huge)
+library(sparsebn)
 #library(devtools)
 #library(SpiecEasi)
 
@@ -12,7 +13,7 @@ library(huge)
 source("common_functions.R")
 
 ## Global parameters
-method = "NS"
+method = "DAG"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
 window_length = 150
@@ -21,12 +22,11 @@ final_date = as.Date("2020-06-30")
 
 ###### Import data
 
-# Volatilities
+# Returns
 df <- read.table('./Data/Large_network/largenet_log_ret.csv',sep=",", header=TRUE)
 
 # Format date column
 df$Date <- as.Date(df$Date)
-print(df$Date)
 
 # Filter dataset based on the dates
 filtered_df = subset(df, final_date >= as.Date(Date))
@@ -55,52 +55,62 @@ filtered_df <- scale(filtered_df)
 validation_df <- scale(validation_df)
 
 
-
-
 ## METHOD 1: Base case (without factors)
 
 ## Run the model
 
-# Neighbourhood selection
+# SPARSEBN - DAG method
 #################### estimate the partial correlation matrix with various methods
 
 # Parameters
-n=nrow(filtered_df)
-p=ncol(filtered_df)
-alpha=1
-l1=0.01*(sqrt(n)*qnorm(1-alpha/(2*p^2))) #*0.7
-iter=3
+dat <- sparsebnData(filtered_df, type = "c")
+
+# Run the algorithm
+dags = estimate.dag(dat)
+dags.fit <- estimate.parameters(dags, data = dat)
+
+# Get adjacency matrix of one particular solution from the solution path
+A = dags.fit[[10]]$coefs
+
+# Convert sparse matrix into regular matrix format
+estimated_network = as.matrix(A)
 
 
-
-result1=space.neighbor(data.matrix(filtered_df), lam1=l1, lam2=0)
-print(result1)
-
-estimated_partial_corr_matrix = result1$ParCor
-print(estimated_partial_corr_matrix)
-
-custom_mb = function(data,reg_param){
-  result1=space.neighbor(data, lam1=reg_param, lam2=0)
-  
+## Hyperparameter-tuning - penalty term
+custom_dag = function(data,lambda){
+  path <-  lapply(seq(length(lambda)), function(i) {
+    
+    print(i)
+    
+    dat <- sparsebnData(data, type = "c")
+    
+    # Run the algorithm
+    dags = estimate.dag(dat)
+    dags.fit <- estimate.parameters(dags, data = dat)
+    
+    tmp <- as.matrix(dags.fit[[i]]$coefs)
+  })
+  my_list = list("path" = path)
+  return(my_list)
 }
 
-# Hyperparameter tuning - penalty terms
+dagargs = seq(from=length(dags.fit)-1,to=1,by=-1)
+dagargs <- list(lambda=dagargs)
 
-out.mb = huge(data.matrix(filtered_df))
+out.dag <- pulsar(filtered_df,
+                  fun=custom_dag, fargs=dagargs, rep.num=10,
+                  criterion='stars', lb.stars=TRUE, ub.stars=TRUE)
 
-# model selection using ric or stars
-out.select = huge.select(out.mb , criterion = "ric",
-                          rep.num=10)
+# Get optimal lambda
+chosen_lambda = out.dag$stars$opt.index
 
-# Get optimal regularisation parameter
-chosen_lambda = out.select$opt.lambda
+# Refit with optimal lambda
+A = dags.fit[[chosen_lambda]]$coefs
 
-# Rerun model with chosen lambda
-result1=space.neighbor(data.matrix(filtered_df),
-                       lam1=chosen_lambda, lam2=0)
+# Convert sparse matrix into regular matrix format
+estimated_network = as.matrix(A)
 
-estimated_partial_corr_matrix = result1$ParCor
-print(estimated_partial_corr_matrix)
+print(estimated_network)
 
 
 
@@ -110,7 +120,7 @@ final_date_transformed = paste0(substr(final_date,1,4),"_",
                                 substr(final_date,6,7),"_",
                                 substr(final_date,9,10))
 filename = paste0("./Data/Large_network/Estimated_networks/largenet_",method,"_",type,"_",final_date_transformed,".csv")
-write.csv(estimated_partial_corr_matrix,filename)
+write.csv(estimated_network,filename)
 
 
 # PLACEHOLDER

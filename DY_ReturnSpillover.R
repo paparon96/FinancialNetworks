@@ -4,10 +4,18 @@ LoadLibraries()
 return <- list()
 
 # Loading data
+# return$data <- list()
+# return$data$return <- as.data.frame( read.csv( "Data/Stock_prices/log_returns_all_ts.csv", header = TRUE, sep = "," ) )
+# return$data$return$Date <- format( as.Date( return$data$return$Date, format = "%d/%m/%Y" ), "%Y-%m-%d" )
+# risk_factors_5 <- as.data.frame( read.csv( "Data/Stock_prices/F-F_Research_Data_5_Factors_2x3_daily.CSV", header = TRUE, sep = "," ))
+
+# Loading large dataset
 return$data <- list()
-return$data$return <- as.data.frame( read.csv( "Data/Stock_prices/log_returns_all_ts.csv", header = TRUE, sep = "," ) )
-return$data$return$Date <- format( as.Date( return$data$return$Date, format = "%d/%m/%Y" ), "%Y-%m-%d" )
-risk_factors_5 <- as.data.frame( read.csv( "Data/Stock_prices/F-F_Research_Data_5_Factors_2x3_daily.CSV", header = TRUE, sep = "," ))
+return$data$return <- as.data.frame( read.csv( "Data/Large_network/largenet_log_ret.csv", header = TRUE, sep = "," ) )
+# return$data$return$Date <- format( as.Date( return$data$return$Date, format = "%d/%m/%Y" ), "%Y-%m-%d" )
+# risk_factors_5 <- as.data.frame( read.csv( "Data/Stock_prices/F-F_Research_Data_5_Factors_2x3_daily.CSV", header = TRUE, sep = "," ))
+
+
 
 # Build VAR model
 return$static <- list()

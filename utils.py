@@ -115,6 +115,27 @@ def network_preprocessing_general(date,method,ts_type,base_path):
     return network
 
 
+def general_robustness_check(dates,method,ts_type,base_path):
+
+    """Creates the adjacency matrix with the specified parameters for 2 different dates and computes
+    the Frobenius-norm of the difference of the matrices to check persistence/robustness of results"""
+
+
+
+    # Get the adjacency matrix of the estimated networks
+    network1 = network_preprocessing_general(dates[0],method,ts_type,base_path)
+    network2 = network_preprocessing_general(dates[1],method,ts_type,base_path)
+
+    # Convert them to numpy arrays
+    network1 = nx.to_numpy_matrix(network1)
+    network2 = nx.to_numpy_matrix(network2)
+
+    # Get difference
+    diff = np.linalg.norm(network1-network2)
+
+    return diff
+
+
 def network_matrix_preprocessing(date,method,ts_type,dy_threshold):
 
     """Import the network adjacency matrix from a .csv file, converts it into a numpy array"""

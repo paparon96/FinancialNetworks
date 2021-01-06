@@ -9,6 +9,7 @@ import forceatlas2
 from fa2 import ForceAtlas2
 import igraph
 import cairocffi
+import scipy
 
 
 
@@ -107,6 +108,9 @@ def network_preprocessing_general(date,method,ts_type,base_path):
 
     # Zero out the diagonal
     np.fill_diagonal(network_matrix,0)
+
+    # Turn any potential negative weights to zero
+    network_matrix[network_matrix<0] = 0
 
 
     # Convert it into networkX object
@@ -207,18 +211,22 @@ def centrality_ranking_df(centrality_type,networks,varnames,asset_sizes=None,cro
     # Loop over different methods and their networks
     for key,val in networks.items():
 
-        print(key)
+        #print(key)
 
 
         if centrality_type == "katz-bonacich":
 
-            centrality_dict = nx.katz_centrality(val)
+            centrality_dict = nx.katz_centrality(val,
+                        weight="weight",
+                          max_iter = 10000,
+                         tol = 0.00001)
             ticker_names = [varnames[k] for k, v in sorted(centrality_dict.items(),
                                                      key=lambda item: item[1],reverse=True)]
 
         elif centrality_type == "betweenness":
 
-            centrality_dict = nx.betweenness_centrality(val)
+            centrality_dict = nx.betweenness_centrality(val,
+                                    weight="weight")
             ticker_names = [varnames[k] for k, v in sorted(centrality_dict.items(),
                                                      key=lambda item: item[1],reverse=True)]
 
@@ -230,13 +238,17 @@ def centrality_ranking_df(centrality_type,networks,varnames,asset_sizes=None,cro
 
         elif centrality_type == "eigenvector":
 
-            centrality_dict = nx.eigenvector_centrality(val)
+            centrality_dict = nx.eigenvector_centrality(val,
+                        weight="weight",
+                          max_iter = 10000,
+                         tol = 0.00001)
             ticker_names = [varnames[k] for k, v in sorted(centrality_dict.items(),
                                                      key=lambda item: item[1],reverse=True)]
 
         elif centrality_type == "closeness":
 
-            centrality_dict = nx.closeness_centrality(val)
+            centrality_dict = nx.closeness_centrality(val,
+                          distance="weight")
             ticker_names = [varnames[k] for k, v in sorted(centrality_dict.items(),
                                                      key=lambda item: item[1],reverse=True)]
 
@@ -606,3 +618,94 @@ base_path,data_type):
 
     plt.savefig('./Figures/{}_{}_{}_{}.pdf'.format(data_type,ts_type,method,date),dpi = 120)
     plt.show()
+
+
+
+
+def rank_correlation_comparison(dates,methods,centrality_types,ts_type,base_path,
+cross_holdings,asset_sizes,colors,varnames):
+
+
+    # Create centrality rankings
+    if cross_holdings:
+        CH_network = CH_network
+    else:
+        CH_network = None
+
+    if asset_sizes:
+        varnames_sorted_by_asset = varnames_sorted_by_asset
+    else:
+        varnames_sorted_by_asset = None
+
+
+    rank_results = {}
+
+    for date in dates:
+
+        for centrality_type in centrality_types:
+
+            # Create dictionary to store the outputs
+            networks = {}
+
+            for method in methods:
+
+                networks[method] = network_preprocessing_general(date,method,ts_type,base_path)
+
+            # Create centrality rankings
+            ranking_df = centrality_ranking_df(centrality_type,networks,
+                                                   varnames,varnames_sorted_by_asset,CH_network)
+
+            rank_results[(date,centrality_type)] = ranking_df
+
+
+    rank_pre_corr_results = {}
+
+    for key, val in rank_results.items():
+
+
+        rankings = {}
+
+        for method in methods:
+
+            ranks = []
+            for var in varnames:
+                ranks.append(int(val[val[method]==var].index.values))
+
+            rankings[method] = ranks
+
+        rank_pre_corr_results[key] = rankings
+
+
+
+    for key, val in rank_results.items():
+
+        current_date, current_centrality_type = key
+
+        #print(key)
+
+        kdcorr_dict = {}
+
+        for i in range(0,len(methods)):
+            for j in range(i+1,len(methods)):
+
+                method1 = methods[i]
+                method2 = methods[j]
+                new_key = str(method1) + '-' + str(method2)
+
+                kdcorr = scipy.stats.kendalltau(val[method1],val[method2])[0]
+
+
+                kdcorr_dict[new_key] = kdcorr
+
+
+        n = len(kdcorr_dict.keys())
+
+        plt.bar(np.arange(n),kdcorr_dict.values(),color = colors[:n])
+        plt.xticks(np.arange(len(kdcorr_dict.keys())),kdcorr_dict.keys(),rotation=90)
+        plt.xlabel("Method pairs",size = 14)
+        plt.ylabel("Kendall-tau \n rank correlation",size = 14)
+        plt.title("Rank correlation comparison between methods \n at {} for {} centrality measure".format(current_date, current_centrality_type),size = 16)
+        plt.savefig('./Figures/Large_network/kendall_tau_rank_correlation_methods_{}_{}.pdf'.format(current_date,
+                                                                                    current_centrality_type,
+                                                                                                    dpi=120))
+        plt.show()

@@ -1,15 +1,25 @@
 import pandas as pd
 import numpy as np
+import scipy
+
 import networkx as nx
+
 import matplotlib.pyplot as plt
 import seaborn as sns
-import copy
-import sys
+
 import forceatlas2
 from fa2 import ForceAtlas2
 import igraph
 import cairocffi
-import scipy
+
+# Utilities
+import pickle
+import copy
+import time
+import sys
+
+from fuzzy_match import match
+from fuzzy_match import algorithims
 
 
 
@@ -709,3 +719,22 @@ cross_holdings,asset_sizes,colors,varnames):
                                                                                     current_centrality_type,
                                                                                                     dpi=120))
         plt.show()
+
+
+
+
+def cross_holdings_computer(df, choices, ticker_name_dict, stock_ticker, holder_ticker,
+                            match_type,score_cutoff):
+
+    # Get current holder name
+    current_holder_name = ticker_name_dict[holder_ticker]
+
+    # Perform fuzzy matching
+    fuzzy_matches = match.extract(current_holder_name, choices, match_type=match_type, score_cutoff=score_cutoff)
+
+    # Get holdings' share
+    if len(fuzzy_matches) == 0:
+        return 0
+    else:
+        match_names = [match[0] for match in fuzzy_matches]
+        return np.sum(df[df['Name'].isin(match_names)][stock_ticker].values) / 100

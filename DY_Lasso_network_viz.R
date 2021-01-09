@@ -13,17 +13,28 @@ window <- 150
 date <- as.Date( "2020-06-30" )
 date <- as.Date( "2020-03-16" )
 
-# Function to plot graph (first run the function's code)
-graphs <- PlotLassoNetworks( date, "Volatility", window, vol$data$volatility, arrow_size, edge_size, threshold )
-name <- 'DY_volatility_' + date + '.csv'
-write.csv( graphs$spill[ 1 ], 'Data/Estimated_networks/DY_Lasso_volatility_2020_06_30.csv' )
-graphs <- PlotLassoNetworks( date, "Volatility", window, vol$factors$resid, arrow_size, edge_size, threshold )
-write.csv( graphs$spill[ 1 ], 'Data/Estimated_networks/DY_Lasso_volatility_factor_resid_2020_06_30.csv' )
 
-graphs <- PlotLassoNetworks( date, "Return", window, return$data$return[ , -1 ], arrow_size, edge_size, threshold )
-write.csv( graphs$spill[ 1 ], 'Data/Estimated_networks/DY_Lasso_return_2020_06_30.csv' )
-graphs <- PlotLassoNetworks( date, "Return", window, return$factors$resid, arrow_size, edge_size, threshold )
-write.csv( graphs$spill[ 1 ], 'Data/Estimated_networks/DY_Lasso_return_factor_resid_2020_06_30.csv' )
+dates <- c( "2019-12-31", "2020-03-16", "2020-03-31", "2020-06-30", "2020-09-30", "2020-12-23" )
+
+for( date in dates ){
+  csv_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_return_', date, '.csv', sep = '' )
+  csv_name <- gsub( "-", "_", csv_name )
+  graphs <- PlotLassoNetworks( date, "Return", window, return$data$return, arrow_size, edge_size, threshold )
+  write.csv( graphs$spill[ 1 ], csv_name )
+  
+  upper <- as.matrix( as.data.frame( graphs$spill[ 1 ] ))
+  upper[ lower.tri( upper ) ] <- 0
+  lower <- as.matrix( as.data.frame( graphs$spill[ 1 ] ))
+  lower[ upper.tri( lower ) ] <- 0
+  net <- lower - t( upper )
+  net <- net - t( net )
+  diag( net ) <- diag( upper )
+  
+  csv_net_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_net_return_', date, '.csv', sep = '' )
+  csv_net_name <- gsub( "-", "_", csv_net_name )
+  write.csv( net, csv_name )
+}
+
 
 
 # Function

@@ -2,7 +2,7 @@ LoadLibraries()
 
 # Set time interval
 from_date = "2010-01-02"
-to_date = "2020-12-30"
+to_date = "2021-01-01"
 
 # Import bank names
 banks <- as.data.frame( read_excel( "Data/Stock_prices/Bank_tickers.xlsx" ))

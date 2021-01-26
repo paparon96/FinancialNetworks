@@ -15,7 +15,7 @@ source("common_functions.R")
 method = "NS"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
-window_length = 150
+window_length = 100
 validation_window_length = 40
 final_date = as.Date("2020-12-31")
 
@@ -109,7 +109,7 @@ print(estimated_partial_corr_matrix)
 final_date_transformed = paste0(substr(final_date,1,4),"_",
                                 substr(final_date,6,7),"_",
                                 substr(final_date,9,10))
-filename = paste0("./Data/Large_network/Estimated_networks/largenet_",method,"_",type,"_",final_date_transformed,".csv")
+filename = paste0("./Data/Large_network/Estimated_networks/largenet_",method,"_",type,"_",final_date_transformed,"_window_size_",window_length,".csv")
 write.csv(estimated_partial_corr_matrix,filename)
 
 

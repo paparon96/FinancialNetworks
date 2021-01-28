@@ -738,3 +738,67 @@ def cross_holdings_computer(df, choices, ticker_name_dict, stock_ticker, holder_
     else:
         match_names = [match[0] for match in fuzzy_matches]
         return np.sum(df[df['Name'].isin(match_names)][stock_ticker].values) / 100
+
+
+
+def network_preprocessing_sensitivity_window_size(date,method,ts_type,base_path,window_sizes):
+
+    """Import the network adjacency matrix from a .csv file, converts it into a networkx
+    diGraph object"""
+
+    # Convert date to string
+    final_date_transformed = date.replace("-","_")
+
+    # Initialize objects to store the results
+    networks = []
+
+
+    # Import file
+    filename = base_path +\
+                  method+"_"+ts_type+"_"+final_date_transformed+".csv"
+
+    network_matrix = np.genfromtxt(filename,
+                              delimiter=',',skip_header = 1,usecols = np.arange(1,77))
+
+    # Zero out the diagonal
+    np.fill_diagonal(network_matrix,0)
+
+    # Turn any potential negative weights to zero
+    network_matrix[network_matrix<0] = 0
+
+    networks.append(network_matrix)
+
+    for window_size in window_sizes:
+        # Import file
+        filename = base_path +\
+                      method+"_"+ts_type+"_"+final_date_transformed+"_window_size_{}.csv".format(window_size)
+
+        network_matrix = np.genfromtxt(filename,
+                                  delimiter=',',skip_header = 1,usecols = np.arange(1,77))
+
+        # Zero out the diagonal
+        np.fill_diagonal(network_matrix,0)
+
+        # Turn any potential negative weights to zero
+        network_matrix[network_matrix<0] = 0
+
+        networks.append(network_matrix)
+
+
+
+    return networks
+
+
+
+def relative_frobenius_norm_change(arr1,arr2):
+
+    """Computes the relative change between the arrays"""
+
+
+    # Get difference
+    diff = np.linalg.norm(arr1-arr2)
+
+    # Get average original size
+    avg_orig = np.mean([np.linalg.norm(arr1),np.linalg.norm(arr2)])
+
+    return diff/avg_orig

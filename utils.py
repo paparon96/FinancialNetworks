@@ -622,7 +622,7 @@ base_path,data_type):
                          #node_color=colors,
                          font_size=8, node_color=color_map,
                      edgelist=edges,
-                     edge_color=weights+3,
+                     edge_color=weights,
                      width=5.0, edge_cmap=plt.cm.Blues,
                          with_labels=True)
 

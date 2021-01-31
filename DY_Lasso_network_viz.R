@@ -5,7 +5,7 @@ LoadLibraries()
 threshold <- 0.0
 arrow_size <- 0.8
 edge_size <- 200
-window <- 50
+window <- 150
 
 
 
@@ -17,7 +17,7 @@ date <- "2020-12-31"
 dates <- c( "2019-12-31", "2020-03-16", "2020-03-31", "2020-06-30", "2020-09-30", "2020-12-31" )
 
 for( date in dates ){
-  csv_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_return_', date, '_window_size_', window, '.csv', sep = '' )
+  csv_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_return_', date,'.csv', sep = '' )
   csv_name <- gsub( "-", "_", csv_name )
   graphs <- PlotLassoNetworks( date, "Return", window, return$data$return, arrow_size, edge_size, threshold )
   write.csv( graphs$spill[ 1 ], csv_name )
@@ -30,7 +30,7 @@ for( date in dates ){
   net <- net - t( net )
   diag( net ) <- diag( upper )
   
-  csv_net_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_net_return_', date, '_window_size_', window, '.csv', sep = '' )
+  csv_net_name <- paste( 'Data/Large_network/Estimated_networks/largenet_DY_net_return_', date, '.csv', sep = '' )
   csv_net_name <- gsub( "-", "_", csv_net_name )
   write.csv( net, csv_net_name )
 }
@@ -41,7 +41,7 @@ for( date in dates ){
 PlotLassoNetworks <- function( date, measure, window, data, arrow_size, edge_size, threshold ){
   rownames( data ) <- c( 1:length( data$Date ) )
   end_date <- as.numeric( rownames( data[ as.Date( data$Date ) == date, ] ) )
-  start_date <- end_date - 199
+  start_date <- end_date - window + 1
   mod1<-constructModel( as.matrix( subset( data[ start_date:end_date, ], select = -c( Date ) ) ), p = 2, "Basic", gran = c( 150, 10 ), RVAR = FALSE, h = 10, cv = "Rolling", MN = FALSE, verbose = FALSE, IC = TRUE )
   graph_var <- cv.BigVAR( mod1 )
   graph_spill <- spilloverDY12( graph_var, n.ahead = 10, no.corr = T )

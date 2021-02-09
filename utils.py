@@ -714,7 +714,9 @@ cross_holdings,asset_sizes,colors,varnames):
         plt.xticks(np.arange(len(kdcorr_dict.keys())),kdcorr_dict.keys(),rotation=90)
         plt.xlabel("Method pairs",size = 14)
         plt.ylabel("Kendall-tau \n rank correlation",size = 14)
-        plt.title("Rank correlation comparison between methods \n at {} for {} centrality measure".format(current_date, current_centrality_type),size = 16)
+        plt.title("Rank correlation comparison  \n between methods at {} \n for {} centrality measure".format(current_date, current_centrality_type),size = 16)
+
+        plt.tight_layout()
         plt.savefig('./Figures/Large_network/kendall_tau_rank_correlation_methods_{}_{}.pdf'.format(current_date,
                                                                                     current_centrality_type,
                                                                                                     dpi=120))

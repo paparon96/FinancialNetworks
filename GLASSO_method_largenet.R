@@ -15,9 +15,9 @@ source("common_functions.R")
 method = "GLASSO"
 type = "return"
 var_cols = c("MS","JPM","BAC","C","WFC","GS","USB","TD","BK","TFC")
-window_length = 100
+window_length = 150
 validation_window_length = 40
-final_date = as.Date("2020-12-31")
+final_date = as.Date("2020-03-20")
 rho_hyperparam = 0.25
 
 ###### Import data
